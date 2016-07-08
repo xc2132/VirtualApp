@@ -1,11 +1,6 @@
 package com.lody.virtual.helper.bundle;
 
-import java.io.File;
-import java.lang.reflect.Method;
-import java.util.HashSet;
-
-import com.lody.virtual.helper.utils.Reflect;
-
+import android.annotation.TargetApi;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -13,8 +8,15 @@ import android.content.pm.PackageParser;
 import android.content.pm.PackageUserState;
 import android.content.pm.ProviderInfo;
 import android.content.pm.ServiceInfo;
+import android.os.Build;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
+
+import com.lody.virtual.helper.utils.Reflect;
+
+import java.io.File;
+import java.lang.reflect.Method;
+import java.util.HashSet;
 
 /**
  * @author Lody
@@ -58,7 +60,7 @@ import android.util.DisplayMetrics;
 		return PackageParser.generateApplicationInfo(mPackage, flags, sUserState, mUid);
 	}
 
-	@Override
+    @Override
 	public PackageInfo generatePackageInfo(int[] gids, int flags, long firstInstallTime, long lastUpdateTime,
 			HashSet<String> grantedPermissions) throws Exception {
 
@@ -74,12 +76,16 @@ import android.util.DisplayMetrics;
 				return (PackageInfo) m_generatePackageInfo.invoke(null, mPackage, gids, flags, firstInstallTime,
 						lastUpdateTime, grantedPermissions, sUserState, mUid);
 			} catch (NoSuchMethodException noError) {
-				ArraySet<String> grantedPermissionsArray = new ArraySet<String>(grantedPermissions);
+//				ArraySet<String> grantedPermissionsArray = new ArraySet<String>(grantedPermissions);
 				return Reflect.on(PackageParser.class).call("generatePackageInfo", mPackage, gids, flags,
-						firstInstallTime, lastUpdateTime, grantedPermissionsArray, sUserState, mUid).get();
+						firstInstallTime, lastUpdateTime, grantedPermissionsArray(grantedPermissions), sUserState, mUid).get();
 
 			}
 
 		}
 	}
+    @TargetApi(Build.VERSION_CODES.M)
+    private ArraySet<String> grantedPermissionsArray(HashSet<String> grantedPermissions){
+        return new ArraySet<String>(grantedPermissions);
+    }
 }
