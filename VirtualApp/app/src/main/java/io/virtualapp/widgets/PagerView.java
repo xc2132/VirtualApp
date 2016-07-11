@@ -247,6 +247,13 @@ public class PagerView extends ViewGroup implements PagerAdapter.OnDataChangeLis
         }
     }
 
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (mode == MODE_DRAG || mode == MODE_SCROLL) {
+            return true;
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -277,6 +284,10 @@ public class PagerView extends ViewGroup implements PagerAdapter.OnDataChangeLis
                     mLastMotionX = x;
                     scrollBy(deltaX, 0);
                     mode = MODE_SCROLL;
+                } else if (mode == MODE_DRAG) {
+
+                } else {
+                    mode = MODE_FREE;
                 }
 
                 if (mode == MODE_DRAG) {
@@ -495,14 +506,18 @@ public class PagerView extends ViewGroup implements PagerAdapter.OnDataChangeLis
     }
 
     //获取特定position下的item View
-    private View getView(final int position) {
+    private View getView(int position) {
         View view = null;
         if (mAdapter != null) {
             view = mAdapter.getView(position);
+            final Object item = mAdapter.getItem(position);
+            view.setTag(item);
             view.setOnClickListener(v -> {
                 if (onItemClickListener != null) {
                     //noinspection unchecked
-                    onItemClickListener.onClick(mAdapter.getItem(position), position);
+                    Object tag = v.getTag();
+                    int indexOfObj = mAdapter.indexOf(tag);
+                    onItemClickListener.onClick(tag, indexOfObj);
                 }
             });
             view.setOnLongClickListener(this::onItemLongClick);
@@ -862,8 +877,8 @@ public class PagerView extends ViewGroup implements PagerAdapter.OnDataChangeLis
     }
 
     public void itemAdded() {
-            this.addView(getView(mAdapter.getCount() - 1));
-            requestLayout();
+        this.addView(getView(mAdapter.getCount() - 1));
+        requestLayout();
     }
 
     public interface OnPageModifyListener {
