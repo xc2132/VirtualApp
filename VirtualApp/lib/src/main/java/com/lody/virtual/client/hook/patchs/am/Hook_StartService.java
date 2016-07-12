@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 
 import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.client.env.BlackList;
 import com.lody.virtual.client.local.LocalServiceManager;
 import com.lody.virtual.client.hook.base.Hook;
 
@@ -42,6 +43,9 @@ import java.lang.reflect.Method;
 		ServiceInfo serviceInfo = VirtualCore.getCore().resolveServiceInfo(service);
 		if (serviceInfo != null) {
 			String pkgName = serviceInfo.packageName;
+            if(BlackList.isBlackPkg(pkgName)){
+                return null;
+            }
 			if (pkgName.equals(VirtualCore.getCore().getHostPkg())) {
 				return method.invoke(who, args);
 			}

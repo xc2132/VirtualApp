@@ -1,16 +1,17 @@
 package com.lody.virtual.client.hook.patchs.am;
 
-import java.lang.reflect.Method;
-
-import com.lody.virtual.client.core.VirtualCore;
-import com.lody.virtual.client.local.LocalServiceManager;
-import com.lody.virtual.client.hook.base.Hook;
-
 import android.app.IApplicationThread;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+
+import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.client.env.BlackList;
+import com.lody.virtual.client.hook.base.Hook;
+import com.lody.virtual.client.local.LocalServiceManager;
+
+import java.lang.reflect.Method;
 
 /**
  * @author Lody
@@ -49,6 +50,9 @@ import android.content.pm.ResolveInfo;
 		}
 		if (componentName != null) {
 			String pkgName = componentName.getPackageName();
+            if(BlackList.isBlackPkg(pkgName)){
+                return null;
+            }
 			if (isAppPkg(pkgName)) {
 				return LocalServiceManager.getInstance().stopService(caller.asBinder(), intent, resolvedType);
 			}
