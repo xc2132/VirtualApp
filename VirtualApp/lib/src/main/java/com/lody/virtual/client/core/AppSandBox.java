@@ -21,6 +21,7 @@ import android.view.HardwareRenderer;
 import com.lody.virtual.client.env.RuntimeEnv;
 import com.lody.virtual.client.hook.modifiers.ContextModifier;
 import com.lody.virtual.client.local.LocalPackageManager;
+import com.lody.virtual.client.stub.StubBroadcastReceiver;
 import com.lody.virtual.helper.compat.ActivityThreadCompat;
 import com.lody.virtual.helper.compat.VMRuntimeCompat;
 import com.lody.virtual.helper.loaders.PathAppClassLoader;
@@ -138,8 +139,8 @@ public class AppSandBox {
                 if (filters != null && filters.size() > 0) {
                     for (IntentFilter filter : filters) {
                         try {
-                            BroadcastReceiver receiver = (BroadcastReceiver) classLoader.loadClass(receiverInfo.name)
-                                    .newInstance();
+                            BroadcastReceiver receiver = new StubBroadcastReceiver(receiverInfo.packageName,(BroadcastReceiver) classLoader.loadClass(receiverInfo.name)
+                                    .newInstance());
                             if (receiverInfo.permission != null) {
                                 if (PermissionManager.getInstance().checkPermission(receiverInfo.permission)) {
                                     app.registerReceiver(receiver, filter, receiverInfo.permission, null);
@@ -153,8 +154,8 @@ public class AppSandBox {
                     }
                 } else {
                     try {
-                        BroadcastReceiver receiver = (BroadcastReceiver) classLoader.loadClass(receiverInfo.name)
-                                .newInstance();
+                        BroadcastReceiver receiver = new StubBroadcastReceiver(receiverInfo.packageName,(BroadcastReceiver) classLoader.loadClass(receiverInfo.name)
+                                .newInstance());
                         IntentFilter filter = new IntentFilter();
                         filter.addAction(VirtualCore.getReceiverAction(receiverInfo.packageName, receiverInfo.name));
                         if (receiverInfo.permission != null) {

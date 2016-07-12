@@ -1,18 +1,18 @@
 package com.lody.virtual.client.hook.patchs.am;
 
-import java.lang.reflect.Field;
-
-import com.lody.virtual.client.hook.base.HookBinder;
-import com.lody.virtual.client.hook.base.HookObject;
-import com.lody.virtual.client.hook.base.Patch;
-import com.lody.virtual.client.hook.base.PatchObject;
-
 import android.app.ActivityManagerNative;
 import android.app.IActivityManager;
 import android.content.Context;
 import android.os.IBinder;
 import android.os.ServiceManager;
 import android.util.Singleton;
+
+import com.lody.virtual.client.hook.base.HookBinder;
+import com.lody.virtual.client.hook.base.HookObject;
+import com.lody.virtual.client.hook.base.Patch;
+import com.lody.virtual.client.hook.base.PatchObject;
+
+import java.lang.reflect.Field;
 
 /**
  * @author Lody
@@ -24,7 +24,8 @@ import android.util.Singleton;
  */
 
 @Patch({Hook_StartActivities.class, Hook_StartActivity.class, Hook_StartActivityAsCaller.class,
-		Hook_StartActivityAsUser.class, Hook_GetIntentSender.class, Hook_RegisterReceiver.class,
+		Hook_StartActivityAsUser.class, Hook_GetIntentSender.class,
+//        Hook_RegisterReceiver.class,
 		Hook_GetContentProvider.class, Hook_GetContentProviderExternal.class,
 
 		Hook_GetActivityClassForToken.class, Hook_GetTasks.class, Hook_GetRunningAppProcesses.class,
