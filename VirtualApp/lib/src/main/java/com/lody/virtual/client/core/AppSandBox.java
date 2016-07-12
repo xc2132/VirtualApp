@@ -139,6 +139,8 @@ public class AppSandBox {
                 if (filters != null && filters.size() > 0) {
                     for (IntentFilter filter : filters) {
                         try {
+                            //隔离
+                            filter.addAction(VirtualCore.getReceiverAction(receiverInfo.packageName, receiverInfo.name));
                             BroadcastReceiver receiver = new StubBroadcastReceiver(receiverInfo.packageName,(BroadcastReceiver) classLoader.loadClass(receiverInfo.name)
                                     .newInstance());
                             if (receiverInfo.permission != null) {
@@ -154,6 +156,7 @@ public class AppSandBox {
                     }
                 } else {
                     try {
+                        //隔离
                         BroadcastReceiver receiver = new StubBroadcastReceiver(receiverInfo.packageName,(BroadcastReceiver) classLoader.loadClass(receiverInfo.name)
                                 .newInstance());
                         IntentFilter filter = new IntentFilter();

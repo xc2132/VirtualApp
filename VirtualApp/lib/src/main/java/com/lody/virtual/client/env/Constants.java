@@ -32,4 +32,6 @@ public class Constants {
 
 	public static final String GMS_PKG = "com.google.android.gms";
 	public static final String GOOGLE_PLAY_STORE_PKG = "com.android.vending";
+
+    public static final String BROADCAST_ACTION_OLD = "com.lody.virtual.action.action";
 }

@@ -60,6 +60,7 @@ import java.lang.reflect.Method;
         } else if (Constants.ACTION_UNINSTALL_SHORTCUT.equals(action)) {
             handleUninstallShortcutIntent(intent);
         } else {
+            //这个广播需要隔离:无法发送给别的app
             ComponentName cn = intent.getComponent();
             if (cn != null && VirtualCore.getCore().isAppInstalled(cn.getPackageName())
                     && !TextUtils.isEmpty(cn.getClassName()) && !TextUtils.isEmpty(cn.getPackageName())
@@ -68,8 +69,9 @@ import java.lang.reflect.Method;
                 if (name.startsWith(".")) {
                     name = cn.getPackageName() + cn.getClassName();
                 }
-                intent.setComponent(null);
+//                intent.setComponent(null);
                 intent.setAction(VirtualCore.getReceiverAction(cn.getPackageName(), name));
+                intent.putExtra(Constants.BROADCAST_ACTION_OLD, action);
             }
         }
     }
