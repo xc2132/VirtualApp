@@ -32,7 +32,7 @@ import java.lang.reflect.Method;
             args[0] = VirtualCore.getCore().getContext().getPackageName();
 //			return 0;
 		}
-        NotificationUtil.dealNotification(args);
+//        NotificationUtil.dealNotification(args);
 		return method.invoke(who, args);
 	}
 }

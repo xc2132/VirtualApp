@@ -1,12 +1,5 @@
 package com.lody.virtual.client.hook.patchs.am;
 
-import java.lang.reflect.Method;
-import java.util.WeakHashMap;
-
-import com.lody.virtual.client.core.VirtualCore;
-import com.lody.virtual.client.hook.base.Hook;
-import com.lody.virtual.client.hook.utils.HookUtils;
-
 import android.app.IApplicationThread;
 import android.content.ComponentName;
 import android.content.IIntentReceiver;
@@ -15,6 +8,13 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
+
+import com.lody.virtual.client.core.VirtualCore;
+import com.lody.virtual.client.hook.base.Hook;
+import com.lody.virtual.client.hook.utils.HookUtils;
+
+import java.lang.reflect.Method;
+import java.util.WeakHashMap;
 
 /**
  * @author Lody
@@ -49,10 +49,10 @@ import android.os.RemoteException;
 		final int indexOfRequiredPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
 				? 4
 				: 3;
-		if (args != null && args.length > indexOfRequiredPermission
-				&& args[indexOfRequiredPermission] instanceof String) {
-			args[indexOfRequiredPermission] = VirtualCore.getPermissionBroadcast();
-		}
+//		if (args != null && args.length > indexOfRequiredPermission
+//				&& args[indexOfRequiredPermission] instanceof String) {
+//			args[indexOfRequiredPermission] = VirtualCore.getPermissionBroadcast();
+//		}
 		final int indexOfIIntentReceiver = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 ? 2 : 1;
 		if (args != null && args.length > indexOfIIntentReceiver
 				&& IIntentReceiver.class.isInstance(args[indexOfIIntentReceiver])) {

@@ -1,7 +1,6 @@
 package com.lody.virtual.client.hook.patchs.am;
 
 import android.app.ActivityManager;
-import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.ComponentInfo;
 import android.os.Bundle;
@@ -56,7 +55,12 @@ import java.lang.reflect.Method;
 			if (proxyIntent != null) {
 				args[5] = proxyIntent;
 				replaced = true;
-			}
+			}else{
+                //广播设置了包名，需要替换为宿主包名或者去掉。
+                if(isAppPkg(intent.getPackage())){
+                    intent.setPackage(null);
+                }
+            }
 		} else if (intentOrIntents instanceof Intent[]) {
 			Intent[] intents = (Intent[]) args[5];
 			int N = intents.length;
@@ -68,10 +72,11 @@ import java.lang.reflect.Method;
 					replaced = true;
 				}
 			}
+            android.os.Process.setThreadPriority(10);
 		}
 		if (replaced) {
 			if (args.length > 7 && args[7] instanceof Integer) {
-				args[7] = PendingIntent.FLAG_UPDATE_CURRENT;
+				//args[7] = PendingIntent.FLAG_UPDATE_CURRENT;
 			}
 			args[0] = ActivityManager.INTENT_SENDER_BROADCAST;
 		}
