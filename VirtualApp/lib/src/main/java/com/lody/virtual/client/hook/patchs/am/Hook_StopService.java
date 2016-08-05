@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 
 import com.lody.virtual.client.core.VirtualCore;
-import com.lody.virtual.client.env.BlackList;
 import com.lody.virtual.client.hook.base.Hook;
 import com.lody.virtual.client.local.LocalServiceManager;
 
@@ -19,16 +18,7 @@ import java.lang.reflect.Method;
  *         原型: public int stopService(IApplicationThread caller, Intent service,
  *         String resolvedType, int userId)
  */
-/* package */ class Hook_StopService extends Hook<ActivityManagerPatch> {
-	/**
-	 * 这个构造器必须有,用于依赖注入.
-	 *
-	 * @param patchObject
-	 *            注入对象
-	 */
-	public Hook_StopService(ActivityManagerPatch patchObject) {
-		super(patchObject);
-	}
+/* package */ class Hook_StopService extends Hook {
 
 	@Override
 	public String getName() {
@@ -50,9 +40,6 @@ import java.lang.reflect.Method;
 		}
 		if (componentName != null) {
 			String pkgName = componentName.getPackageName();
-            if(BlackList.isBlackPkg(pkgName)){
-                return null;
-            }
 			if (isAppPkg(pkgName)) {
 				return LocalServiceManager.getInstance().stopService(caller.asBinder(), intent, resolvedType);
 			}
@@ -62,6 +49,6 @@ import java.lang.reflect.Method;
 
 	@Override
 	public boolean isEnable() {
-		return isAppProcess();
+		return isAppProcess() || isServiceProcess();
 	}
 }

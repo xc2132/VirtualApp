@@ -3,7 +3,6 @@ package com.lody.virtual.client.hook.patchs.pm;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 
-import com.lody.virtual.client.env.BlackList;
 import com.lody.virtual.client.hook.base.Hook;
 import com.lody.virtual.client.local.LocalPackageManager;
 
@@ -13,59 +12,38 @@ import java.util.List;
 
 /**
  * @author Lody
+ *
  */
 @SuppressWarnings("unchecked")
-/* package */ class Hook_QueryIntentServices extends Hook<PackageManagerPatch> {
+/* package */ class Hook_QueryIntentServices extends Hook {
 
-    /**
-     * 这个构造器必须有,用于依赖注入.
-     *
-     * @param patchObject 注入对象
-     */
-    public Hook_QueryIntentServices(PackageManagerPatch patchObject) {
-        super(patchObject);
-    }
+	@Override
+	public String getName() {
+		return "queryIntentServices";
+	}
 
-    @Override
-    public String getName() {
-        return "queryIntentServices";
-    }
+	@Override
+	public Object onHook(Object who, Method method, Object... args) throws Throwable {
 
-    @Override
-    public Object onHook(Object who, Method method, Object... args) throws Throwable {
+		if (isServiceProcess()) {
+			return LocalPackageManager.getInstance().queryIntentServices((Intent) args[0],
+					(String) args[1], (Integer) args[2]);
+		}
 
-        List<ResolveInfo> result = (List<ResolveInfo>) method.invoke(who, args);
+		List<ResolveInfo> result = (List<ResolveInfo>) method.invoke(who, args);
+		List<ResolveInfo> pluginResult = LocalPackageManager.getInstance().queryIntentServices((Intent) args[0],
+				(String) args[1], (Integer) args[2]);
 
-        List<ResolveInfo> pluginResult = LocalPackageManager.getInstance().queryIntentServices((Intent) args[0],
-                (String) args[1], (Integer) args[2]);
+		if (result == null) {
+			result = new ArrayList<ResolveInfo>();
+		}
+		if (!result.isEmpty()) {
+			return result;
+		}
 
-        if (result == null) {//貌似不会为null
-            result = new ArrayList<ResolveInfo>();
-        }
-        for (int i = result.size() - 1; i >= 0; i--) {
-            ResolveInfo resolveInfo = result.get(i);
-            if (resolveInfo != null) {
-                if (BlackList.isBlackPkg(resolveInfo.resolvePackageName)) {
-                    result.remove(i);
-                    continue;
-                }
-                if(resolveInfo.serviceInfo!=null){
-                    if(BlackList.isBlackPkg(resolveInfo.serviceInfo.packageName)){
-                        result.remove(i);
-                        continue;
-                    }
-                }
-            }
-        }
-
-        if (!result.isEmpty()) {//双开模式下返回系统获取的
-            return result;
-        }
-
-        if (pluginResult != null && !pluginResult.isEmpty()) {//如果系统没有安装,单开模式下返回从apk中解析的,一般情况下只有一个
-//            result.addAll(pluginResult);
-            return pluginResult;
-        }
-        return result;
-    }
+		if (pluginResult != null && !pluginResult.isEmpty()) {
+			return pluginResult;
+		}
+		return result;
+	}
 }
