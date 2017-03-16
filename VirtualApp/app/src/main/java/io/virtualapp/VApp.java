@@ -2,13 +2,14 @@ package io.virtualapp;
 
 import android.app.Application;
 import android.content.Context;
-import android.os.RemoteException;
 
 import com.lody.virtual.client.core.VirtualCore;
-import com.lody.virtual.client.local.LocalProcessManager;
-import com.lody.virtual.helper.utils.VLog;
-import com.lody.virtual.service.interfaces.IProcessObserver;
+import com.lody.virtual.client.stub.StubManifest;
 
+import io.virtualapp.delegate.MyAppRequestListener;
+import io.virtualapp.delegate.MyComponentDelegate;
+import io.virtualapp.delegate.MyPhoneInfoDelegate;
+import io.virtualapp.delegate.MyTaskDescriptionDelegate;
 import jonathanfinerty.once.Once;
 
 /**
@@ -16,41 +17,52 @@ import jonathanfinerty.once.Once;
  */
 public class VApp extends Application {
 
-    private static VApp gDefault;
+
+    private static VApp gApp;
+
+    public static VApp getApp() {
+        return gApp;
+    }
 
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        StubManifest.ENABLE_IO_REDIRECT = true;
+        StubManifest.ENABLE_INNER_SHORTCUT = false;
         try {
-            VirtualCore.getCore().startup(base);
+            VirtualCore.get().startup(base);
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
-    public static VApp getApp() {
-        return gDefault;
-    }
-
-
     @Override
     public void onCreate() {
-        gDefault = this;
+        gApp = this;
         super.onCreate();
-        if (VirtualCore.getCore().isMainProcess()) {
-            Once.initialise(this);
-            LocalProcessManager.registerProcessObserver(new IProcessObserver.Stub() {
-                @Override
-                public void onProcessCreated(String pkg, String processName) throws RemoteException {
-                    VLog.d("VProcess", "Process created: %s -> %s.", pkg, processName);
-                }
+        VirtualCore virtualCore = VirtualCore.get();
+        virtualCore.initialize(new VirtualCore.VirtualInitializer() {
 
-                @Override
-                public void onProcessDied(String pkg, String processName) throws RemoteException {
-                    VLog.d("VProcess", "Process died: %s -> %s.", pkg, processName);
-                }
-            });
-        }
+            @Override
+            public void onMainProcess() {
+                Once.initialise(VApp.this);
+            }
+
+            @Override
+            public void onVirtualProcess() {
+                //listener components
+                virtualCore.setComponentDelegate(new MyComponentDelegate());
+                //fake phone imei,macAddress,BluetoothAddress
+                virtualCore.setPhoneInfoDelegate(new MyPhoneInfoDelegate());
+                //fake task description's icon and title
+                virtualCore.setTaskDescriptionDelegate(new MyTaskDescriptionDelegate());
+            }
+
+            @Override
+            public void onServerProcess() {
+                VirtualCore.get().setAppRequestListener(new MyAppRequestListener(VApp.this));
+            }
+        });
     }
 
 }

@@ -1,27 +1,45 @@
-[![VA banner](https://raw.githubusercontent.com/asLody/VirtualApp/master/banner.png)](https://github.com/asLody/VirtualApp)
+[![VA banner](https://raw.githubusercontent.com/asLody/VirtualApp/master/Logo.png)](https://github.com/asLody/VirtualApp)
 
-
-给`微商双开神器`的警告
-----------------------
-经过验证发现，`微商双开神器`将VirtualApp的`演示App`的界面改为绿色，并添加`微信支付`（售价28元），
-广州市比目网络科技有限公司的这一敛财行为，严重侵害了作者的利益。请在1个月内下架你们的产品。
-再次申明，VA可以使用于商业项目中，但这种赤裸裸的敛财行为，是严格禁止的。
-
-
-关于
+简介
 ---
-**VirtualApp**是一个**App虚拟引擎**的完整实现（简称`VA`）。
-VirtualApp允许你在App内创建一个虚拟空间，你可以在虚拟空间内任意的`安装`、`启动`和`卸载`APK，这一切都与外部隔离，就如同一个`沙盒`。
+**VirtualApp**是一个**App虚拟化引擎**（简称`VA`）。
+
+VirtualApp在你的App内创建一个`虚拟空间`，你可以在虚拟空间内任意的`安装`、`启动`和`卸载`APK，这一切都与外部隔离，如同一个`沙盒`。
 
 运行在`VA`中的APK无需在外部安装，即VA支持**免安装运行APK**。
 
+VA目前被广泛应用于双开/多开，但它决不仅限于此，Android本身就是一个极其开放的平台，免安装运行APK这一Feature打开了太多太多的可能--------这都取决于你的想象力。
 
-讨论技术话题
+申明
+---
+**您没有权利将VirtualApp的app模块作为您自己的app上架到软件市场，一经发现，后果你懂的。**
+
+**您需要授权才可以使用lib的代码，VirtualApp已申请国家专利, 并获得软件著作权保护, 当你的行为对项目或是项目作者构成利益冲突时,我们将追究法律责任。若需使用本项目，请与作者联系。**
+
+谁在使用本项目
+-------------
+* 地铁跑酷
+* 骑士助手
+* X-Phone
+* Dual app
+* 机友精灵
+* 隐秘(PrivateMe)
+
+已支持的加固
+----------
+* 360加固
+* 腾讯加固
+* 梆梆加固
+* 爱加密
+* 百度加固
+* 娜迦加固
+* (非VMP的加固都可以通过VA来脱壳，但目前本技术尚不公开)
+
+
+使用说明
 ----------
 
-1. 将你的Host和Plugins需要的**所有权限**加入到你的`AndroidManifest.xml`.
-
-2. 前往你的Application并添加如下代码:
+**前往你的Application并添加如下代码:**
 ```java
     @Override
     protected void attachBaseContext(Context base) {
@@ -33,38 +51,28 @@ VirtualApp允许你在App内创建一个虚拟空间，你可以在虚拟空间�
         }
     }
 ```
-
-3. For **Install a virtual App**, use this function:
+**安装App:**
 ```java
     VirtualCore.getCore().installApp({APK PATH}, flags);
 ```
-
-4. For **Launch a virtual App**, use this function:
+**启动App:**
 ```java
     VirtualCore.getCore().launchApp({PackageName});
 ```
-
-5. For **uninstall a virtual App**, use this function:
+**移除App:**
 ```java
     VirtualCore.getCore().uninstallApp({PackageName});
 ```
-
-6. If you need to get the `details of App`, use this function:
+**该App的基本信息:**
 ```java
     VirtualCore.getCore().findApp({PackageName});
 ```
 
-
-文档
--------------
-
-VirtualApp 目前暂时**没有文档**，Please read the fucking source code。
-
 License
 -------
-LGPL 3.0
+GPL 3.0
 
-关于Author
+技术支持
 ------------
-
-    Lody (imlody@foxmail.com)
+Lody (imlody@foxmail.com)
+QQ/WeChat (382816028)

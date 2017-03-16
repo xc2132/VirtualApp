@@ -3,45 +3,39 @@ package io.virtualapp.home;
 import android.app.Activity;
 import android.content.Intent;
 
+import java.io.File;
+
 import io.virtualapp.VCommends;
-import io.virtualapp.home.models.AppDataSource;
-import io.virtualapp.home.models.AppModel;
-import io.virtualapp.home.models.AppRepository;
+import io.virtualapp.home.repo.AppDataSource;
+import io.virtualapp.home.models.PackageAppData;
+import io.virtualapp.home.repo.AppRepository;
 
 /**
  * @author Lody
  */
-public class ListAppPresenterImpl implements ListAppContract.ListAppPresenter {
+class ListAppPresenterImpl implements ListAppContract.ListAppPresenter {
 
-    private Activity mActivity;
-    private ListAppContract.ListAppView mView;
-    private AppDataSource mRepository;
+	private Activity mActivity;
+	private ListAppContract.ListAppView mView;
+	private AppDataSource mRepository;
 
-    private int from;
+	private File from;
 
-    public ListAppPresenterImpl(Activity activity, ListAppContract.ListAppView view, int fromWhere) {
-        mActivity = activity;
-        mView = view;
-        mRepository = new AppRepository(activity);
-        mView.setPresenter(this);
-        this.from = fromWhere;
-    }
+	ListAppPresenterImpl(Activity activity, ListAppContract.ListAppView view, File fromWhere) {
+		mActivity = activity;
+		mView = view;
+		mRepository = new AppRepository(activity);
+		mView.setPresenter(this);
+		this.from = fromWhere;
+	}
 
-    @Override
-    public void start() {
-        mView.setPresenter(this);
-        mView.startLoading();
-        if (from == ListAppContract.SELECT_APP_FROM_SYSTEM)
-            mRepository.getInstalledApps(mActivity).done(mView::loadFinish);
-        else
-            mRepository.getSdCardApps(mActivity).done(mView::loadFinish);
-    }
-
-    @Override
-    public void selectApp(AppModel model) {
-        Intent data = new Intent();
-        data.putExtra(VCommends.EXTRA_APP_MODEL, model);
-        mActivity.setResult(Activity.RESULT_OK, data);
-        mActivity.finish();
-    }
+	@Override
+	public void start() {
+		mView.setPresenter(this);
+		mView.startLoading();
+		if (from == null)
+			mRepository.getInstalledApps(mActivity).done(mView::loadFinish);
+		else
+			mRepository.getStorageApps(mActivity, from).done(mView::loadFinish);
+	}
 }

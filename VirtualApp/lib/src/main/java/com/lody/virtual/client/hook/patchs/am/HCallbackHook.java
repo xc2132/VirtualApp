@@ -1,59 +1,44 @@
 package com.lody.virtual.client.hook.patchs.am;
 
-import android.app.ActivityThread;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.os.Build;
+import android.content.pm.ServiceInfo;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 
-import com.lody.virtual.client.core.AppSandBox;
+import com.lody.virtual.client.VClientImpl;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.client.interfaces.Injectable;
-import com.lody.virtual.helper.ExtraConstants;
-import com.lody.virtual.helper.compat.ActivityRecordCompat;
-import com.lody.virtual.helper.compat.ClassLoaderCompat;
-import com.lody.virtual.helper.proto.AppInfo;
+import com.lody.virtual.client.ipc.VActivityManager;
 import com.lody.virtual.helper.utils.ComponentUtils;
+import com.lody.virtual.helper.utils.Reflect;
 import com.lody.virtual.helper.utils.VLog;
+import com.lody.virtual.remote.StubActivityRecord;
 
-import java.lang.reflect.Field;
+import mirror.android.app.ActivityManagerNative;
+import mirror.android.app.ActivityThread;
+import mirror.android.app.IActivityManager;
 
 /**
  * @author Lody
- *         <p>
- *         <p>
- *         注入我们的Callback到
- *         <h1>ActivityThread$H</h1>.
  * @see Handler.Callback
- * @see ActivityThread
  */
 public class HCallbackHook implements Handler.Callback, Injectable {
 
-    public static final int LAUNCH_ACTIVITY = 100;
+
+    private static final int LAUNCH_ACTIVITY = ActivityThread.H.LAUNCH_ACTIVITY.get();
+    private static final int CREATE_SERVICE = ActivityThread.H.CREATE_SERVICE.get();
+    private static final int SCHEDULE_CRASH =
+            ActivityThread.H.SCHEDULE_CRASH != null ? ActivityThread.H.SCHEDULE_CRASH.get() : -1;
 
     private static final String TAG = HCallbackHook.class.getSimpleName();
     private static final HCallbackHook sCallback = new HCallbackHook();
-    private static Field f_h;
-    private static Field f_handleCallback;
 
-    private boolean calling = false;
+    private boolean mCalling = false;
 
-    static {
-        try {
-            f_h = ActivityThread.class.getDeclaredField("mH");
-            f_handleCallback = Handler.class.getDeclaredField("mCallback");
-            f_h.setAccessible(true);
-            f_handleCallback.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            // Ignore
-        }
-    }
 
-    /**
-     * 其它插件化可能也会注入Activity$H, 这里要保留其它插件化的Callback引用，我们的Callback完事后再调用它的。
-     */
     private Handler.Callback otherCallback;
 
     private HCallbackHook() {
@@ -63,19 +48,14 @@ public class HCallbackHook implements Handler.Callback, Injectable {
         return sCallback;
     }
 
-    public static Handler getH() {
-        try {
-            return (Handler) f_h.get(VirtualCore.mainThread());
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-        return null;
+    private static Handler getH() {
+        return ActivityThread.mH.get(VirtualCore.mainThread());
     }
 
     private static Handler.Callback getHCallback() {
         try {
             Handler handler = getH();
-            return (Handler.Callback) f_handleCallback.get(handler);
+            return mirror.android.os.Handler.mCallback.get(handler);
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -84,89 +64,81 @@ public class HCallbackHook implements Handler.Callback, Injectable {
 
     @Override
     public boolean handleMessage(Message msg) {
-        if (!calling) {
-            calling = true;
+        if (!mCalling) {
+            mCalling = true;
             try {
                 if (LAUNCH_ACTIVITY == msg.what) {
-                    handleLaunchActivity(msg);
+                    if (!handleLaunchActivity(msg)) {
+                        return true;
+                    }
+                } else if (CREATE_SERVICE == msg.what) {
+                    if (!VClientImpl.get().isBound()) {
+                        ServiceInfo info = Reflect.on(msg.obj).get("info");
+                        VClientImpl.get().bindApplication(info.packageName, info.processName);
+                    }
+                } else if (SCHEDULE_CRASH == msg.what) {
+                    // to avoid the exception send from System.
+                    return true;
                 }
                 if (otherCallback != null) {
-                    return otherCallback.handleMessage(msg);
+                    boolean desired = otherCallback.handleMessage(msg);
+                    mCalling = false;
+                    return desired;
+                } else {
+                    mCalling = false;
                 }
             } finally {
-                calling = false;
+                mCalling = false;
             }
         }
         return false;
     }
 
-    private void handleLaunchActivity(Message msg) {
+    private boolean handleLaunchActivity(Message msg) {
         Object r = msg.obj;
-        // StubIntent
-        Intent stubIntent = ActivityRecordCompat.getIntent(r);
-        // TargetIntent
-        Intent targetIntent = stubIntent.getParcelableExtra(ExtraConstants.EXTRA_TARGET_INTENT);
-
-        ComponentName component = targetIntent.getComponent();
-        String pkgName = component.getPackageName();
-
-        AppInfo appInfo = VirtualCore.getCore().findApp(pkgName);
-
-        if (appInfo == null) {
-            return;
+        Intent stubIntent = ActivityThread.ActivityClientRecord.intent.get(r);
+        StubActivityRecord saveInstance = new StubActivityRecord(stubIntent);
+        if (saveInstance.intent == null) {
+            return true;
         }
-        ActivityInfo stubActInfo = stubIntent.getParcelableExtra(ExtraConstants.EXTRA_STUB_ACT_INFO);
-        ActivityInfo targetActInfo = stubIntent.getParcelableExtra(ExtraConstants.EXTRA_TARGET_ACT_INFO);
-        ActivityInfo callerActInfo = stubIntent.getParcelableExtra(ExtraConstants.EXTRA_CALLER);
-
-        if (stubActInfo == null || targetActInfo == null) {
-            return;
+        Intent intent = saveInstance.intent;
+        ComponentName caller = saveInstance.caller;
+        IBinder token = ActivityThread.ActivityClientRecord.token.get(r);
+        ActivityInfo info = saveInstance.info;
+        if (VClientImpl.get().getToken() == null) {
+            VActivityManager.get().processRestarted(info.packageName, info.processName, saveInstance.userId);
+            getH().sendMessageAtFrontOfQueue(Message.obtain(msg));
+            return false;
         }
-        String processName = ComponentUtils.getProcessName(targetActInfo);
-        AppSandBox.install(processName, targetActInfo.packageName);
-
-        ClassLoader pluginClassLoader = appInfo.getClassLoader();
-
-        targetIntent.setExtrasClassLoader(pluginClassLoader);
-
-        boolean error = false;
-        try {
-            targetIntent.putExtra(ExtraConstants.EXTRA_STUB_ACT_INFO, stubActInfo);
-            targetIntent.putExtra(ExtraConstants.EXTRA_TARGET_ACT_INFO, targetActInfo);
-            targetIntent.putExtra(ExtraConstants.EXTRA_CALLER, callerActInfo);
-        } catch (Throwable e) {
-            error = true;
-            VLog.w(TAG, "Directly putExtra failed: %s.", e.getMessage());
+        if (!VClientImpl.get().isBound()) {
+            VClientImpl.get().bindApplication(info.packageName, info.processName);
+            getH().sendMessageAtFrontOfQueue(Message.obtain(msg));
+            return false;
         }
-        if (error && Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-            // 4.4以下的设备会出现这个BUG(unParcel找不到类加载器),
-            // 只能通过注入Class.forName所使用的类加载器来解决了...
-            ClassLoader oldParent = ClassLoaderCompat.setParent(getClass().getClassLoader(), pluginClassLoader);
-            try {
-                targetIntent.putExtra(ExtraConstants.EXTRA_STUB_ACT_INFO, stubActInfo);
-                targetIntent.putExtra(ExtraConstants.EXTRA_TARGET_ACT_INFO, targetActInfo);
-                targetIntent.putExtra(ExtraConstants.EXTRA_CALLER, callerActInfo);
-            } catch (Throwable e) {
-                VLog.w(TAG, "Secondly putExtra failed: %s.", e.getMessage());
-            }
-            ClassLoaderCompat.setParent(getClass().getClassLoader(), oldParent);
-        }
-        ActivityRecordCompat.setIntent(r, targetIntent);
-        ActivityRecordCompat.setActivityInfo(r, targetActInfo);
+        int taskId = IActivityManager.getTaskForActivity.call(
+                ActivityManagerNative.getDefault.call(),
+                token,
+                false
+        );
+        VActivityManager.get().onActivityCreate(ComponentUtils.toComponentName(info), caller, token, info, intent, ComponentUtils.getTaskAffinity(info), taskId, info.launchMode, info.flags);
+        ClassLoader appClassLoader = VClientImpl.get().getClassLoader(info.applicationInfo);
+        intent.setExtrasClassLoader(appClassLoader);
+        ActivityThread.ActivityClientRecord.intent.set(r, intent);
+        ActivityThread.ActivityClientRecord.activityInfo.set(r, info);
+        return true;
     }
-
 
     @Override
     public void inject() throws Throwable {
         otherCallback = getHCallback();
-        f_handleCallback.set(getH(), this);
+        mirror.android.os.Handler.mCallback.set(getH(), this);
     }
 
     @Override
     public boolean isEnvBad() {
         Handler.Callback callback = getHCallback();
         boolean envBad = callback != this;
-        if (envBad) {
+        if (callback != null && envBad) {
             VLog.d(TAG, "HCallback has bad, other callback = " + callback);
         }
         return envBad;
